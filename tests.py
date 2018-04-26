@@ -7,7 +7,7 @@ import base64
 import boto3
 from six import string_types
 from moto import mock_s3
-from aws import get_event_data
+from awsevents import get_event_data
 
 
 def get_file_object():
