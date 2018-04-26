@@ -1,0 +1,142 @@
+{
+    "s3": {
+        "Records": [
+            {
+                "eventVersion": "2.0",
+                "eventTime": "1970-01-01T00:00:00.000Z",
+                "requestParameters": {
+                    "sourceIPAddress": "127.0.0.1"
+                },
+                "s3": {
+                    "configurationId": "testConfigRule",
+                    "object": {
+                        "eTag": "0123456789abcdef0123456789abcdef",
+                        "sequencer": "0A1B2C3D4E5F678901",
+                        "key": "test.json",
+                        "size": 1024
+                    },
+                    "bucket": {
+                        "arn": "arn:aws:s3:::aws_event_parser",
+                        "name": "aws_event_parser",
+                        "ownerIdentity": {
+                            "principalId": "EXAMPLE"
+                        }
+                    },
+                    "s3SchemaVersion": "1.0"
+                },
+                "responseElements": {
+                    "x-amz-id-2": "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH",
+                    "x-amz-request-id": "EXAMPLE123456789"
+                },
+                "awsRegion": "us-east-1",
+                "eventName": "ObjectCreated:Put",
+                "userIdentity": {
+                    "principalId": "EXAMPLE"
+                },
+                "eventSource": "aws:s3"
+            }
+        ]
+    },
+    "kinesis_stream": {
+        "Records": [
+            {
+                "eventID": "shardId-000000000000:495451152434909",
+                "eventVersion": "1.0",
+                "kinesis": {
+                    "partitionKey": "partitionKey-3",
+                    "data": "eyJ0ZXN0IjogInRlc3RpbmcgaGVyZSJ9",
+                    "kinesisSchemaVersion": "1.0",
+                    "sequenceNumber": "4954511524349098501828006771"
+                },
+                "invokeIdentityArn": "identityarn",
+                "eventName": "aws:kinesis:record",
+                "eventSourceARN": "eventsourcearn",
+                "eventSource": "aws:kinesis",
+                "awsRegion": "us-east-1"
+            }
+        ]
+    },
+    "dynamodb_stream": {
+        "Records": [
+            {
+                "eventID": "1",
+                "eventVersion": "1.0",
+                "dynamodb": {
+                    "Keys": {
+                        "Id": {
+                            "N": "101"
+                        }
+                    },
+                    "NewImage": {
+                        "Message": {
+                            "S": "New item!"
+                        },
+                        "Id": {
+                            "N": "101"
+                        }
+                    },
+                    "StreamViewType": "NEW_AND_OLD_IMAGES",
+                    "SequenceNumber": "111",
+                    "SizeBytes": 26
+                },
+                "awsRegion": "us-west-2",
+                "eventName": "INSERT",
+                "eventSourceARN": "eventsourcearn",
+                "eventSource": "aws:dynamodb"
+            }
+        ]
+    },
+    "sns": {
+        "Records": [
+            {
+                "EventVersion": "1.0",
+                "EventSubscriptionArn": "eventsubscriptionarn",
+                "EventSource": "aws:sns",
+                "Sns": {
+                    "SignatureVersion": "1",
+                    "Timestamp": "1970-01-01T00:00:00.000Z",
+                    "Signature": "EXAMPLE",
+                    "SigningCertUrl": "EXAMPLE",
+                    "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e",
+                    "Message": "Hello from SNS!",
+                    "MessageAttributes": {
+                        "Test": {
+                            "Type": "String",
+                            "Value": "TestString"
+                        },
+                        "TestBinary": {
+                            "Type": "Binary",
+                            "Value": "TestBinary"
+                        }
+                    },
+                    "Type": "Notification",
+                    "UnsubscribeUrl": "EXAMPLE",
+                    "TopicArn": "topicarn",
+                    "Subject": "TestInvoke"
+                }
+            }
+        ]
+    },
+    "s3_sns": {
+        "Records": [
+            {
+                "EventVersion": "1.0",
+                "EventSource": "aws:sns",
+                "EventSubscriptionArn": "event_subs",
+                "Sns": {
+                    "MessageId": "message_id",
+                    "Signature": "Sm61aDjcAsuCLuW5zf0Vf7qMhNAyS",
+                    "Type": "Notification",
+                    "TopicArn": "topicarn",
+                    "MessageAttributes": {},
+                    "SignatureVersion": "1",
+                    "Timestamp": "2017-11-27T06:12:42.722Z",
+                    "SigningCertUrl": "SigningCertUrl",
+                    "Message": "{\"Records\":[{\"eventVersion\":\"2.0\",\"eventSource\":\"aws:s3\",\"awsRegion\":\"us-east-1\",\"eventTime\":\"2017-11-27T06:12:42.591Z\",\"eventName\":\"ObjectCreated:Put\",\"userIdentity\":{\"principalId\":\"AWS:AROAISAFZREWP3OZPYPZC:AWSFirehoseToS3\"},\"requestParameters\":{\"sourceIPAddress\":\"34.238.123.144\"},\"responseElements\":{\"x-amz-request-id\":\"CD1D925BA047100F\",\"x-amz-id-2\":\"536EetC9sgJ7Hy+KKXXlaTe5VYN5aNLQ=\"},\"s3\":{\"s3SchemaVersion\":\"1.0\",\"configurationId\":\"test-dwh-express-bag-raw-event\",\"bucket\":{\"name\":\"aws_event_parser\",\"ownerIdentity\":{\"principalId\":\"A1GOU6AHPQA1EE\"},\"arn\":\"arn:aws:s3:::aws_event_parser\"},\"object\":{\"key\":\"test.json\",\"size\":5803,\"eTag\":\"f7d20559c214b739795fa\",\"sequencer\":\"005A1BACDA\"}}}]}",
+                    "UnsubscribeUrl": "UnsubscribeUrl",
+                    "Subject": "Amazon S3 Notification"
+                }
+            }
+        ]
+    }
+}

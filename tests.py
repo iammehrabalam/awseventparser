@@ -5,8 +5,10 @@ import tempfile
 import json
 import base64
 import boto3
+from six import string_types
 from moto import mock_s3
 from aws import get_event_data
+
 
 def get_file_object():
     """Generate temp file object."""
@@ -25,11 +27,15 @@ def get_file_object():
 
 class TestAwsEventParser(unittest.TestCase):
     """Aws event parser test cases."""
+
     def setUp(self):
         """SetUp."""
         self.s3_client = boto3.client('s3')
         self.aws_s3 = mock_s3()
         self.aws_s3.start()
+
+        with open('aws_event_sample.json') as f_obj:
+            self.aws_events = json.load(f_obj)
 
         self.s3_bucket_name, self.s3_object_key_name = (
             'aws_event_parser', 'test.json'
@@ -42,69 +48,30 @@ class TestAwsEventParser(unittest.TestCase):
             Key=self.s3_object_key_name
         )
 
+    def _s3(self, event, bucket, key):
+        if isinstance(event, string_types):
+            event = json.loads(event)
+
+        raw_data = self.s3_client.get_object(
+            Bucket=bucket,
+            Key=key
+        ).get('Body')
+
+        data = get_event_data(event)
+
+        while not raw_data._raw_stream.closed:
+            yield raw_data._raw_stream.readline(), next(data)
+
     def test_s3(self):
         """Test for s3 event."""
-        s3_event = {
-            "Records": [{
-                "eventVersion": "2.0",
-                "eventTime": "1970-01-01T00:00:00.000Z",
-                "requestParameters": {
-                    "sourceIPAddress": "127.0.0.1"
-                },
-                "s3": {
-                    "configurationId": "testConfigRule",
-                    "object": {
-                        "eTag": "0123456789abcdef0123456789abcdef",
-                        "sequencer": "0A1B2C3D4E5F678901",
-                        "key": "test.json",
-                        "size": 1024
-                    },
-                    "bucket": {
-                        "arn": "arn:aws:s3:::aws_event_parser",
-                        "name": "aws_event_parser",
-                        "ownerIdentity": {
-                            "principalId": "EXAMPLE"
-                        }
-                    },
-                    "s3SchemaVersion": "1.0"
-                },
-                "responseElements": {
-                    "x-amz-id-2": ("EXAMPLE123/5678abcdefghijklambdai"
-                                   "sawesome/mnopqrstuvwxyzABCDEFGH"),
-                    "x-amz-request-id": "EXAMPLE123456789"
-                },
-                "awsRegion": "us-east-1",
-                "eventName": "ObjectCreated:Put",
-                "userIdentity": {
-                    "principalId": "EXAMPLE"
-                },
-                "eventSource": "aws:s3"
-            }]
-        }
-        data = get_event_data(s3_event)
-        with get_file_object() as file:
-            for line in file:
-                self.assertEqual(next(data), line)
+        s3_event = self.aws_events['s3']
+        for object_line, event_line in self._s3(
+                s3_event, self.s3_bucket_name, self.s3_object_key_name):
+            self.assertEqual(object_line, event_line)
 
     def test_kinesis_stream(self):
         """Test case for kinesis stream."""
-        kinesis_stream_event = {
-            "Records": [{
-                "eventID": "shardId-000000000000:495451152434909",
-                "eventVersion": "1.0",
-                "kinesis": {
-                    "partitionKey": "partitionKey-3",
-                    "data": "eyJ0ZXN0IjogInRlc3RpbmcgaGVyZSJ9",
-                    "kinesisSchemaVersion": "1.0",
-                    "sequenceNumber": "4954511524349098501828006771"
-                },
-                "invokeIdentityArn": "identityarn",
-                "eventName": "aws:kinesis:record",
-                "eventSourceARN": "eventsourcearn",
-                "eventSource": "aws:kinesis",
-                "awsRegion": "us-east-1"
-            }]
-        }
+        kinesis_stream_event = self.aws_events['kinesis_stream']
         data = get_event_data(kinesis_stream_event)
         for event in kinesis_stream_event['Records']:
             self.assertEqual(
@@ -112,8 +79,37 @@ class TestAwsEventParser(unittest.TestCase):
                 base64.b64decode(event['kinesis']['data'])
             )
 
+    def test_dynamodb_stream(self):
+        """Test case for dynamodb event."""
+        dynamodb_stream_event = self.aws_events['dynamodb_stream']
+        data = get_event_data(dynamodb_stream_event)
+        for event in dynamodb_stream_event['Records']:
+            self.assertEqual(
+                next(data),
+                event['dynamodb']['NewImage']
+            )
+
+    def test_sns_event(self):
+        """Test case for sns event."""
+        sns_event = self.aws_events['sns']
+        data = get_event_data(sns_event)
+        for event in sns_event['Records']:
+            self.assertEqual(
+                next(data),
+                event['Sns']['Message']
+            )
+
+    def test_s3_sns_event(self):
+        """Test case for s3->sns event."""
+        s3_sns_event = self.aws_events['s3_sns']
+        for event in s3_sns_event['Records']:
+            for object_line, event_line in self._s3(
+                    event['Sns']['Message'], self.s3_bucket_name,
+                    self.s3_object_key_name):
+                self.assertEqual(object_line, event_line)
+
     def tearDown(self):
-        """tear down."""
+        """Tear down."""
         self.aws_s3.stop()
 
 if __name__ == '__main__':
