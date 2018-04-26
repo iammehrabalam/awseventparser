@@ -1,3 +1,6 @@
+"""Kind of interface."""
+
+
 class BaseEvent(object):
     """Base class for AWS events."""
 
