@@ -6,10 +6,8 @@ except ImportError:
     from urllib.parse import unquote
 
 import base64
-import string
 import json
 import boto3
-import botocore
 from aws.exceptions import EventNotExist
 from aws.base import BaseEvent
 
@@ -34,8 +32,8 @@ class AwsKinesisStreamEvent(BaseEvent):
                 yield base64.b64decode(
                     record['kinesis']['data']
                 )
-            except ValueError as e:
-                logger.error(e, exc_info=True)
+            except ValueError as err:
+                logger.error(err, exc_info=True)
 
 
 class AwsDynamodbEvent(BaseEvent):
@@ -50,6 +48,7 @@ class AwsDynamodbEvent(BaseEvent):
         """
         for record in event.get('Records'):
             yield record.get('dynamodb', {}).get('NewImage')
+
 
 class AwsS3Event(BaseEvent):
     """Aws s3 event class."""
@@ -113,7 +112,7 @@ class AwsSNSEvent(BaseEvent):
             try:
                 next_event = json.loads(message)
                 event_obj = AwsEventFactory.factory(next_event)
-                for data in event_obj.get_app_data(next_event):
+                for data in event_obj.get_event_payload(next_event):
                     yield data
             except ValueError:
                 yield message
@@ -137,7 +136,7 @@ class AwsEventFactory(object):
             "Total event count:{}".format(len(records))
         )
         return dict(
-            zip(map(str.lower, records[0].keys()), records[0].values())
+            zip(map(lambda x: str(x).lower(), records[0].keys()), records[0].values())
         ).get('eventsource')
 
     @classmethod
