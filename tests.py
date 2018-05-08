@@ -7,7 +7,7 @@ import base64
 import boto3
 from six import string_types
 from moto import mock_s3
-from awsevents import get_event_data
+from awsevents import get_event_data, get_event_metadata
 
 
 def get_file_object():
@@ -69,6 +69,14 @@ class TestAwsEventParser(unittest.TestCase):
                 s3_event, self.s3_bucket_name, self.s3_object_key_name):
             self.assertEqual(object_line, event_line)
 
+    def test_s3_meta_data(self):
+        """Test s3 metadata."""
+        s3_event = self.aws_events['s3']
+        data = get_event_metadata(s3_event)
+        d = next(data)
+        self.assertEqual(d['s3_bucket'], s3_event['Records'][0]['s3']['bucket']['name'])
+        self.assertEqual(d['s3_object'], s3_event['Records'][0]['s3']['object']['key'])
+
     def test_kinesis_stream(self):
         """Test case for kinesis stream."""
         kinesis_stream_event = self.aws_events['kinesis_stream']
@@ -107,6 +115,24 @@ class TestAwsEventParser(unittest.TestCase):
                     event['Sns']['Message'], self.s3_bucket_name,
                     self.s3_object_key_name):
                 self.assertEqual(object_line, event_line)
+
+    def test_s3_sns_meta_data(self):
+        """Test s3 sns metadata."""
+        s3_sns_event = self.aws_events['s3_sns']
+        data = get_event_metadata(s3_sns_event)
+        d = next(data)
+
+        self.assertEqual(
+            d['s3_bucket'],
+            json.loads(s3_sns_event['Records'][0]['Sns']['Message'])[
+                'Records'][0]['s3']['bucket']['name']
+        )
+
+        self.assertEqual(
+            d['s3_object'],
+            json.loads(s3_sns_event['Records'][0]['Sns']['Message'])[
+                'Records'][0]['s3']['object']['key']
+        )
 
     def tearDown(self):
         """Tear down."""

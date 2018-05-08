@@ -54,6 +54,15 @@ class AwsS3Event(BaseEvent):
     """Aws s3 event class."""
 
     EVENT_SOURCE = "aws:s3"
+    def get_event_metadata(self, event):
+        """Event meta data."""
+        for record in event.get('Records'):
+            yield {
+                "s3_event_time": record['eventTime'],
+                "s3_bucket": record.get('s3', {}).get('bucket', {}).get('name'),
+                "s3_object": record.get('s3', {}).get('object', {}).get('key'),
+                "s3_object_size": record.get('s3', {}).get('object', {}).get('size'),
+            }
 
     def get_event_payload(self, event):
         """Overriding default implementation.
@@ -84,7 +93,6 @@ class AwsS3Event(BaseEvent):
                 )
 
                 logger.debug("Response:: {}".format(res))
-
             except Exception as err:
                 logger.error(err, exc_info=True)
 
@@ -102,6 +110,29 @@ class AwsSNSEvent(BaseEvent):
 
     EVENT_SOURCE = "aws:sns"
 
+    def get_event_metadata(self, event):
+        """Event meta data."""
+        for record in event.get('Records'):
+            meta_data = {
+                "sns_topic_arn": record['Sns']['TopicArn'],
+                "sns_message_id": record['Sns']['MessageId']
+            }
+            message = record.get('Sns', {}).get('Message')
+            event_obj = self.get_next_event_obj(message)
+            if event_obj:
+                for data in event_obj.get_event_metadata(json.loads(message)):
+                    meta_data.update(data)
+                    yield meta_data
+            else:
+                yield meta_data
+
+    def get_next_event_obj(self, msg):
+        """Checking is given message is event."""
+        try:
+            return AwsEventFactory.factory(json.loads(msg))
+        except (EventNotExist, ValueError):
+            return None
+
     def get_event_payload(self, event):
         """Implement get event data for sns event."""
         for record in event.get('Records') or event.get('records') or []:
@@ -109,18 +140,13 @@ class AwsSNSEvent(BaseEvent):
 
             # Checking if any known event source is present and
             # returning the required payload if found.
-            try:
-                next_event = json.loads(message)
-                event_obj = AwsEventFactory.factory(next_event)
-                for data in event_obj.get_event_payload(next_event):
+
+            event_obj = self.get_next_event_obj(message)
+            if event_obj:
+                for data in event_obj.get_event_payload(json.loads(message)):
                     yield data
-            except ValueError:
+            else:
                 yield message
-
-            except Exception as error:
-                logger.error(error, exc_info=True)
-                yield message
-
 
 class AwsEventFactory(object):
     """Aws Event object generator."""
