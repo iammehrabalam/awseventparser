@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='awseventparser',
-    version='0.2',
+    version='0.4',
     packages=find_packages(),
     author='Md Mehrab Alam',
     author_email='md.mehrab@gmail.com',

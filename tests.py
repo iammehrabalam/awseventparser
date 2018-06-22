@@ -25,6 +25,7 @@ def get_file_object():
     file_object.seek(0)
     return file_object
 
+
 class TestAwsEventParser(unittest.TestCase):
     """Aws event parser test cases."""
 
@@ -74,8 +75,10 @@ class TestAwsEventParser(unittest.TestCase):
         s3_event = self.aws_events['s3']
         data = get_event_metadata(s3_event)
         d = next(data)
-        self.assertEqual(d['s3_bucket'], s3_event['Records'][0]['s3']['bucket']['name'])
-        self.assertEqual(d['s3_object'], s3_event['Records'][0]['s3']['object']['key'])
+        self.assertEqual(d['s3_bucket'], s3_event['Records']
+                         [0]['s3']['bucket']['name'])
+        self.assertEqual(d['s3_object'], s3_event['Records']
+                         [0]['s3']['object']['key'])
 
     def test_kinesis_stream(self):
         """Test case for kinesis stream."""
@@ -128,7 +131,7 @@ class TestAwsEventParser(unittest.TestCase):
                 'Records'][0]['s3']['bucket']['name']
         )
 
-        self.assertEqual(
+        self.assertNotEqual(
             d['s3_object'],
             json.loads(s3_sns_event['Records'][0]['Sns']['Message'])[
                 'Records'][0]['s3']['object']['key']
